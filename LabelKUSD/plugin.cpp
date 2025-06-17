@@ -1,13 +1,6 @@
 #include "plugin.h"
 #include "undocumented.h"
 
-inline bool scmp(const char* a, const char* b)
-{
-    if (!a || !b)
-        return false;
-    return !_stricmp(a, b);
-}
-
 void* GetKUSDLocation()
 {
 #ifdef _WIN64
@@ -33,7 +26,6 @@ static bool getLabelKUSD(duint addr, char(&label)[Size])
         strcpy_s(label, Size, "KUSER_SHARED_DATA." #member); \
         match = true; \
     } else
-
 #include "kusdcases.h"
 #undef CASE
 
@@ -49,7 +41,6 @@ static bool valkusdtostring(const char* name, duint* value, int* value_size, boo
 #define CASE(member) if(_stricmp(name, "KUSER_SHARED_DATA." #member) == 0) { *value = offsetof(KUSD, member); } else
 #include "kusdcases.h"
 #undef CASE
-    //return false;
     *value += (duint)GetKUSDLocation();
     if (value_size)
         *value_size = sizeof(duint);
@@ -61,16 +52,11 @@ static bool valkusdtostring(const char* name, duint* value, int* value_size, boo
 //called from CBVALTOSTRING
 static bool valkusdtostring(const char* name, duint value)
 {
-    duint addr = 0;
-    duint size = 0;
-#define member_size(type, member) sizeof(((type*)0)->member)
-#define CASE(member) if((size = member_size(KUSD, member)) <= sizeof(duint) && _stricmp(name, "KUSER_SHARED_DATA." #member) == 0) { addr = offsetof(KUSD, member); } else
+#define CASE(member) if(_stricmp(name, "KUSER_SHARED_DATA." #member) == 0) { value = offsetof(KUSD, member); } else
 #include "kusdcases.h"
 #undef CASE
-#undef member_size
-    //return false;
-    addr += (duint)GetKUSDLocation();
-    return DbgMemWrite(addr, &value, size);
+    value += (duint)GetKUSDLocation();
+    return true;
 }
 
 PLUG_EXPORT void CBADDRINFO(CBTYPE cbType, PLUG_CB_ADDRINFO* info)
